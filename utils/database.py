@@ -20,6 +20,20 @@ def init_db():
                 PRIMARY KEY (user1_id, guild_id)
             )
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS config (
+                guild_id INTEGER NOT NULL,
+                key      TEXT    NOT NULL,
+                value    TEXT    NOT NULL,
+                PRIMARY KEY (guild_id, key)
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS temp_channels (
+                channel_id INTEGER PRIMARY KEY,
+                guild_id   INTEGER NOT NULL
+            )
+        """)
         conn.commit()
 
 # ── Marriages ────────────────────────────────────────────────────────────────
@@ -54,3 +68,44 @@ def remove_marriage(user_id: int, guild_id: int):
             (user_id, user_id, guild_id)
         )
         conn.commit()
+
+# ── Config ────────────────────────────────────────────────────────────────────
+
+def get_config(guild_id: int, key: str) -> str | None:
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT value FROM config WHERE guild_id = ? AND key = ?",
+            (guild_id, key)
+        ).fetchone()
+        return row[0] if row else None
+
+def set_config(guild_id: int, key: str, value: str):
+    with get_connection() as conn:
+        conn.execute(
+            "INSERT INTO config (guild_id, key, value) VALUES (?, ?, ?) "
+            "ON CONFLICT(guild_id, key) DO UPDATE SET value = excluded.value",
+            (guild_id, key, value)
+        )
+        conn.commit()
+
+# ── Canales temporales ────────────────────────────────────────────────────────
+
+def add_temp_channel(channel_id: int, guild_id: int):
+    with get_connection() as conn:
+        conn.execute(
+            "INSERT OR IGNORE INTO temp_channels (channel_id, guild_id) VALUES (?, ?)",
+            (channel_id, guild_id)
+        )
+        conn.commit()
+
+def remove_temp_channel(channel_id: int):
+    with get_connection() as conn:
+        conn.execute("DELETE FROM temp_channels WHERE channel_id = ?", (channel_id,))
+        conn.commit()
+
+def get_temp_channels(guild_id: int) -> list[int]:
+    with get_connection() as conn:
+        rows = conn.execute(
+            "SELECT channel_id FROM temp_channels WHERE guild_id = ?", (guild_id,)
+        ).fetchall()
+        return [r[0] for r in rows]

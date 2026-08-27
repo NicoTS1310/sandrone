@@ -40,6 +40,10 @@ class HelpView(discord.ui.View):
             embed.description = "Comandos sociales"
             embed.add_field(name="Comandos", value="/marry - Propone matrimonio\n/divorcio - Termina tu matrimonio\n/pareja - Muestra tu pareja actual")
 
+        elif categoria == "utilidad":
+            embed.description = "Comandos de utilidad (solo admins)"
+            embed.add_field(name="Comandos", value="/canal-hub - Configura el canal que crea salas temporales\n/canal-hub-ver - Muestra el canal hub actual")
+
         #agregar mas con "elif"
         embed.set_footer(text="Sandrone bot - Selecciona otra categoria en el menu")
         await interaction.response.edit_message(embed=embed, view=self)
