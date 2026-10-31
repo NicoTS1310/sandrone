@@ -17,10 +17,10 @@ class Miscelaneo(commands.Cog):
     @app_commands.command(name="compatibilidad", description="Calcula la compatibilidad entre 2 usuarios")
     async def compatibilidad (self, interaction: discord.Interaction, usuario1: discord.Member, usuario2: discord.Member = None):
         if usuario2 is None:
-            await interaction.response.send_message("Pq tan solito 💀", ephemeral=True)
+            await interaction.response.send_message("Pq tan solito", ephemeral=True)
             return
         if usuario1.id == usuario2.id:
-            await interaction.response.send_message("No puedes calcular la compatibilidad contigo mismo 💀", ephemeral=True)
+            await interaction.response.send_message("No puedes calcular la compatibilidad contigo mismo", ephemeral=True)
             return
 
         porcentaje = random.randint(0, 100)
@@ -65,39 +65,6 @@ class Miscelaneo(commands.Cog):
         embed.add_field(name="Resultado", value=f"**{porcentaje}%**\n{mensaje}", inline=False)
         embed.set_footer(text="Sandrone bot - Ideado por @serann0255")
         await interaction.response.send_message(embed=embed)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         
 async def setup(bot):
     await bot.add_cog(Miscelaneo(bot))
