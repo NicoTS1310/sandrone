@@ -4,7 +4,14 @@ import time
 import discord
 from discord.ext import commands
 from discord import app_commands
-from utils.database import init_db, get_config, set_config, add_temp_channel, remove_temp_channel, get_temp_channels
+from utils.database import (
+    add_strike,
+    add_temp_channel,
+    get_config,
+    get_temp_channels,
+    remove_temp_channel,
+    set_config,
+)
 
 
 class Canales(commands.Cog):
@@ -13,7 +20,8 @@ class Canales(commands.Cog):
         self.temp_channels: set[int] = set()  # Cache en memoria de canales temporales activos
         self.mention_bursts: dict[tuple[int, int], list[tuple[float, discord.Message]]] = {}
         self.last_spam_alert: dict[tuple[int, int], float] = {}
-        init_db()
+        self.spam_incident_until: dict[tuple[int, int], float] = {}
+        self.last_spam_state_cleanup = 0.0
 
     async def cog_load(self):
         """Al cargar el cog, recupera los canales temporales guardados en la BD
@@ -75,6 +83,30 @@ class Canales(commands.Cog):
         ):
             key = (message.guild.id, message.author.id)
             now = time.monotonic()
+            if now - self.last_spam_state_cleanup >= 60:
+                active_bursts = {}
+                for author_key, messages in self.mention_bursts.items():
+                    recent = [
+                        (timestamp, recent_message)
+                        for timestamp, recent_message in messages
+                        if now - timestamp <= 10
+                    ]
+                    if recent:
+                        active_bursts[author_key] = recent
+
+                self.mention_bursts = active_bursts
+                self.last_spam_alert = {
+                    author_key: timestamp
+                    for author_key, timestamp in self.last_spam_alert.items()
+                    if now - timestamp < 60
+                }
+                self.spam_incident_until = {
+                    author_key: deadline
+                    for author_key, deadline in self.spam_incident_until.items()
+                    if deadline > now
+                }
+                self.last_spam_state_cleanup = now
+
             recent_messages = [
                 (timestamp, recent_message)
                 for timestamp, recent_message in self.mention_bursts.get(key, [])
@@ -89,8 +121,9 @@ class Canales(commands.Cog):
                 or attachment.filename.lower().endswith(image_extensions)
                 for attachment in message.attachments
             ) or any(embed.image.url or embed.thumbnail.url for embed in message.embeds)
-            has_link = bool(re.search(r"(?:https?://|www\.)\S+", message.content, re.IGNORECASE)) or any(
-                embed.url for embed in message.embeds
+            has_link = (
+                bool(re.search(r"(?:https?://|www\.)\S+", message.content, re.IGNORECASE))
+                or any(embed.url for embed in message.embeds)
             )
             repeated_across_channels = (
                 len(recent_messages) >= 3
@@ -98,15 +131,32 @@ class Canales(commands.Cog):
             )
 
             if (has_image or has_link) or repeated_across_channels:
+                # Espera 10 segundos sin detecciones antes de contar otra incidencia.
+                is_new_incident = now >= self.spam_incident_until.get(key, 0)
+                self.spam_incident_until[key] = now + 10
+                if is_new_incident:
+                    reason = (
+                        "Spam con menciones masivas y enlace o imagen"
+                        if has_image or has_link
+                        else "Spam con menciones masivas en varios canales"
+                    )
+                    add_strike(
+                        message.guild.id,
+                        message.author.id,
+                        None,
+                        reason,
+                        "spam",
+                    )
+
                 messages_to_delete = (
                     [recent_message for _, recent_message in recent_messages]
-                    if repeated_across_channels
+                    if repeated_across_channels and is_new_incident
                     else [message]
                 )
                 for suspicious_message in messages_to_delete:
                     await suspicious_message.delete(reason="Posible spam con menciones masivas")
 
-                last_alert = self.last_spam_alert.get(key, 0)
+                last_alert = self.last_spam_alert.get(key, now - 60)
                 if now - last_alert >= 60:
                     self.last_spam_alert[key] = now
                     alert_channel_raw = get_config(message.guild.id, "spam_alert_channel")
@@ -116,9 +166,14 @@ class Canales(commands.Cog):
                         else None
                     )
                     alert_channel = alert_channel or message.channel
+                    strike_notice = (
+                        "Se agregó un strike."
+                        if is_new_incident
+                        else "El incidente continúa."
+                    )
                     await alert_channel.send(
                         f"🚨 Posible spam de {message.author.mention} detectado y eliminado en "
-                        f"{message.channel.mention}. Revisen la cuenta.",
+                        f"{message.channel.mention}. {strike_notice} Revisen la cuenta.",
                         allowed_mentions=discord.AllowedMentions.none()
                     )
 

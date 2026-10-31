@@ -4,9 +4,8 @@ from discord import app_commands
 
 class HelpView(discord.ui.View):
     def __init__(self):
-        super().__init__(timeout=180) #tiempo que dura el menu activo
+        super().__init__(timeout=180)
 
-        #Menu desplegable
         options = [
             discord.SelectOption(label="miscelaneo", description="Comandos varios", emoji="👾", value="miscelaneo"),
             discord.SelectOption(label="moderacion", description="Comandos para mods", emoji="🛡️", value="moderacion"),
@@ -25,16 +24,25 @@ class HelpView(discord.ui.View):
             color=discord.Color.teal()
         )
 
-        #Embed q cambia con menu desplegable
-        embed.set_thumbnail(url="")
-
         if categoria == "miscelaneo":
             embed.description = "Comandos miscelaneos / aleatorios"
             embed.add_field(name="Comandos", value="/suma - Suma 2 numeros\n/compatibilidad - Calcula la compatibilidad entre 2 usuarios")
 
         elif categoria == "moderacion":
             embed.description = "Comandos de moderacion"
-            embed.add_field(name="Comandos", value="/ban - Banea un usuario\n/kick - Expulsa un usuario")
+            embed.add_field(
+                name="Comandos",
+                value=(
+                    "/say - Envía un mensaje como Sandrone\n"
+                    "/ban - Banea un usuario\n"
+                    "/kick - Expulsa un usuario\n"
+                    "/borrar-mensajes - Borra los mensajes de un usuario en un canal\n"
+                    "/strike-agregar - Agrega un strike\n"
+                    "/strike-quitar - Retira el strike activo mas reciente\n"
+                    "/strikes-usuario - Consulta los strikes de un usuario\n"
+                    "/strikes-lista - Lista los usuarios con strikes"
+                ),
+            )
 
         elif categoria == "social":
             embed.description = "Comandos sociales"
@@ -42,9 +50,18 @@ class HelpView(discord.ui.View):
 
         elif categoria == "utilidad":
             embed.description = "Comandos de utilidad (solo admins)"
-            embed.add_field(name="Comandos", value="/canal-hub - Configura el canal que crea salas temporales\n/canal-hub-ver - Muestra el canal hub actual")
+            embed.add_field(
+                name="Comandos",
+                value=(
+                    "/canal-hub - Configura el canal que crea salas temporales\n"
+                    "/canal-hub-ver - Muestra el canal hub actual\n"
+                    "/canal-musica-bloqueo - Bloquea comandos m! en un canal\n"
+                    "/canal-alertas-spam - Configura alertas de spam\n"
+                    "/canal-bienvenida - Configura el canal de bienvenida\n"
+                    "/canal-despedida - Configura el canal de despedida"
+                ),
+            )
 
-        #agregar mas con "elif"
         embed.set_footer(text="Sandrone bot - Selecciona otra categoria en el menu")
         await interaction.response.edit_message(embed=embed, view=self)
 
@@ -59,7 +76,6 @@ class Help(commands.Cog):
             description="Selecciona una categoria en el menu desplegable abajo para ver los comandos",
             color=discord.Color.teal()
         )
-        embed.set_thumbnail(url="")
         embed.set_footer(text="Sandrone Bot")
 
         view = HelpView()

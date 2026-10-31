@@ -1,7 +1,9 @@
-import discord
 import random
+
+import discord
 from discord.ext import commands
 from discord import app_commands
+
 
 class Miscelaneo(commands.Cog):
     def __init__(self, bot):
@@ -68,11 +70,3 @@ class Miscelaneo(commands.Cog):
         
 async def setup(bot):
     await bot.add_cog(Miscelaneo(bot))
-
-
-
-
-#@bot.tree.command(name="suma", description="Suma 2 numeros (Tampoco se pasen de rosca ksjdskd)")
-#async def suma(interaction: discord.Interaction, numero1: float, numero2: float):
-#    resultado = numero1 + numero2
-#    await interaction.response.send_message(f'La suma de **{numero1}** + **{numero2}** es: **{resultado}**')

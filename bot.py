@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import os
 from dotenv import load_dotenv
+from utils.database import init_db
 
 load_dotenv()
 
@@ -10,6 +11,7 @@ GUILD_ID = 1348824425377697792
 
 intents = discord.Intents.default()
 intents.message_content = True
+intents.members = True
 
 bot = commands.Bot(command_prefix="s!", intents=intents) #Prefijo solo pq si
 
@@ -23,13 +25,14 @@ async def on_ready():
 
 #Funcion para llamar todas las categorias "cogs"
 async def load_cogs():
-    for filename in os.listdir("./cogs"):
+    for filename in sorted(os.listdir("./cogs")):
         if filename.endswith(".py") and filename != "__init__.py":
             await bot.load_extension(f"cogs.{filename[:-3]}")
             print(f"cargado: {filename}")
 
 @bot.event
 async def setup_hook():
+    init_db()
     await load_cogs()
 
     guild = discord.Object(id=GUILD_ID)
@@ -52,7 +55,7 @@ async def reload(ctx, cog: str = None):
                 await bot.load_extension(ext)  # Cog nuevo, nunca habia sido cargado
             print(f"Recargado: {cog}")
         else:
-            for filename in os.listdir("./cogs"):
+            for filename in sorted(os.listdir("./cogs")):
                 if filename.endswith(".py") and filename != "__init__.py":
                     ext = f"cogs.{filename[:-3]}"
                     if ext in bot.extensions:
@@ -69,4 +72,3 @@ async def reload(ctx, cog: str = None):
         await ctx.send(f"❌ Error al recargar: `{e}`")
 
 bot.run(os.getenv("TOKEN"))
-

@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 from datetime import datetime
-from utils.database import init_db, get_partner, add_marriage, remove_marriage
+from utils.database import get_partner, add_marriage, remove_marriage
 
 class MarryView(discord.ui.View):
     """Botones de Aceptar/Rechazar para la propuesta de matrimonio."""
@@ -44,7 +44,6 @@ class MarryView(discord.ui.View):
 class Social(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        init_db()  # Crea la tabla si no existe al cargar el cog
 
     @app_commands.command(name="marry", description="Propone matrimonio a otro usuario")
     async def marry(self, interaction: discord.Interaction, usuario: discord.Member):
